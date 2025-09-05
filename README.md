@@ -29,4 +29,8 @@
 
 
 ## طريقة التثبيت
-```bash\nbash <(curl -sL https://raw.githubusercontent.com/mukhtaruv1991/Extract-Project-codes-To-1-TXT/main/install.sh)\n```
+
+## طريقة التثبيت
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/mukhtaruv1991/Extract-Project-codes-To-1-TXT/main/install.sh)
+```
