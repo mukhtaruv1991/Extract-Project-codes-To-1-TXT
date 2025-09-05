@@ -27,3 +27,6 @@
 
 لتثبيت الأداة، انسخ الأمر التالي والصقه في Termux:
 
+
+## طريقة التثبيت
+```bash\nbash <(curl -sL https://raw.githubusercontent.com/mukhtaruv1991/Extract-Project-codes-To-1-TXT/main/install.sh)\n```
