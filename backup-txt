@@ -1,126 +1,70 @@
 #!/data/data/com.termux/files/usr/bin/bash
-
-# --- Mukh-IDE Project & File Backup Tool (backup-txt v3.0) ---
-
-# --- Configuration ---
+# Mukh-IDE Backup Tool (v3.0)
 CONFIG_FILE="$HOME/.backup-txt.conf"
-
-# --- Help Message Function ---
 show_help() {
   echo "Mukh-IDE Backup Tool (v3.0)"
-  echo "A versatile tool to back up projects or single files from Termux."
-  echo ""
-  echo "USAGE:"
-  echo "  backup-txt [OPTION] [--zip]"
-  echo ""
-  echo "PRIMARY OPTIONS:"
-  echo "  -t, --text     (Default) Extracts all project code into a single .txt file."
-  echo "  -c, --clone    Clones the entire project directory, ignoring unnecessary files."
-  echo "  -n, --name     Backs up a single file by its name or path."
-  echo "  --setup        Configures your Telegram Bot for the send feature."
-  echo "  -h, --help     Displays this help message."
-  echo ""
-  echo "SECONDARY OPTIONS (Combine with a primary option):"
-  echo "  -s, --send     Sends the final backup file (.txt, .zip, or single file) to Telegram."
-  echo "  -i, --share    Opens the Android share menu for the final backup file."
-  echo "  --zip          When used with --clone, compresses the cloned project into a .zip file."
-  echo ""
-  echo "EXAMPLES:"
-  echo "  backup-txt -t -s          # Create a .txt backup of the current project and send it"
-  echo "  backup-txt --clone --zip  # Clone the current project into a compressed .zip file"
-  echo "  backup-txt --name -i      # Start interactive mode to back up and share a single file"
+  echo "Back up projects or single files from Termux."
+  echo "USAGE: backup-txt [OPTION]"
+  echo "OPTIONS:"
+  echo "  -t, --text     (Default) Extract project code to a .txt file."
+  echo "  -c, --clone    Clone project directory, ignoring unnecessary files."
+  echo "  -n, --name     Back up a single file by name or path."
+  echo "  --setup        Configure Telegram Bot."
+  echo "  -h, --help     Show this help message."
+  echo "  -s, --send     Send backup to Telegram."
+  echo "  -i, --share    Use Android's share menu."
+  echo "  --zip          Use with --clone to create a .zip file."
 }
-
-# --- Action Parsing ---
-PRIMARY_ACTION=""
-SECONDARY_ACTION=""
-COMPRESS=false
-
+PRIMARY_ACTION=""; SECONDARY_ACTION=""; COMPRESS=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    -t|--text) PRIMARY_ACTION="text" ;;
-    -c|--clone) PRIMARY_ACTION="clone" ;;
-    -n|--name) PRIMARY_ACTION="name" ;; # NEW OPTION
-    -s|--send) SECONDARY_ACTION="send" ;;
-    -i|--share) SECONDARY_ACTION="share" ;;
-    --zip) COMPRESS=true ;;
-    --setup) PRIMARY_ACTION="setup" ;;
-    -h|--help) show_help; exit 0 ;;
-    *) echo "Unknown option: $1"; show_help; exit 1 ;;
-  esac
-  shift
+    -t|--text) PRIMARY_ACTION="text";; -c|--clone) PRIMARY_ACTION="clone";; -n|--name) PRIMARY_ACTION="name";;
+    -s|--send) SECONDARY_ACTION="send";; -i|--share) SECONDARY_ACTION="share";; --zip) COMPRESS=true;;
+    --setup) PRIMARY_ACTION="setup";; -h|--help) show_help; exit 0;;
+    *) echo "Unknown option: $1"; show_help; exit 1;;
+  esac; shift
 done
-
 [ -z "$PRIMARY_ACTION" ] && PRIMARY_ACTION="text"
-
-# --- Setup Action ---
 if [[ "$PRIMARY_ACTION" == "setup" ]]; then
-  echo "--- Telegram Bot Setup ---"
-  read -p "Enter your Bot Token: " BOT_TOKEN
-  read -p "Enter your Chat ID: " CHAT_ID
+  read -p "Enter Bot Token: " BOT_TOKEN; read -p "Enter Chat ID: " CHAT_ID
   echo "BOT_TOKEN='$BOT_TOKEN'" > "$CONFIG_FILE"; echo "CHAT_ID='$CHAT_ID'" >> "$CONFIG_FILE"
-  echo "✅ Credentials saved to $CONFIG_FILE"; exit 0
+  echo "✅ Credentials saved."; exit 0
 fi
-
-# --- Main Logic ---
 [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
-
-OUTPUT_DIR="/storage/emulated/0/Projects_Backups"
-mkdir -p "$OUTPUT_DIR"
-
-# --- Single File Backup Action ---
+OUTPUT_DIR="/storage/emulated/0/Projects_Backups"; mkdir -p "$OUTPUT_DIR"
 if [[ "$PRIMARY_ACTION" == "name" ]]; then
-  echo "--- Single File Backup Mode ---"
-  read -p "Enter the name or path of the file to back up: " FILE_INPUT
-  FILE_PATH=""
+  read -p "Enter file name or path: " FILE_INPUT; FILE_PATH=""
   if [[ "$FILE_INPUT" == /* ]]; then [ -f "$FILE_INPUT" ] && FILE_PATH="$FILE_INPUT";
   elif [ -f "./$FILE_INPUT" ]; then FILE_PATH="./$FILE_INPUT";
   elif [ -f "$HOME/bin/$FILE_INPUT" ]; then FILE_PATH="$HOME/bin/$FILE_INPUT"; fi
-  if [ -z "$FILE_PATH" ]; then echo "❌ Error: File '$FILE_INPUT' not found."; exit 1; fi
-  echo "✅ File found: $FILE_PATH"
-  FILENAME=$(basename "$FILE_PATH")
-  OUTPUT_FILE="$OUTPUT_DIR/$FILENAME"
-  cp "$FILE_PATH" "$OUTPUT_FILE"
-  echo "✅ File copied to: $OUTPUT_FILE"
-# --- Project Backup Logic ---
+  if [ -z "$FILE_PATH" ]; then echo "❌ File not found."; exit 1; fi
+  FILENAME=$(basename "$FILE_PATH"); OUTPUT_FILE="$OUTPUT_DIR/$FILENAME"
+  cp "$FILE_PATH" "$OUTPUT_FILE"; echo "✅ File copied to: $OUTPUT_FILE"
 else
-  PROJECT_PATH=$(pwd)
-  PROJECT_NAME=$(basename "$PROJECT_PATH")
-  TIMESTAMP=$(date +"%Y-%m-%d_%H-%M")
-  IGNORE_PATTERNS=( '.git' '.idea' 'build' 'dist' 'out' 'node_modules' 'vendor' 'packages' '.gradle' 'captures' '.externalNativeBuild' 'gen' 'bin' '__pycache__' '*.apk' '*.aab' '*.aar' '*.ap_' '*.dex' '*.class' '*.log' '*.lock' '*.tmp' '*.swp' '*.swo' 'local.properties' '*.jks' '*.keystore' '.DS_Store' 'Thumbs.db' '*.iml' '*.zip' '*.tar.gz' '*.tar' )
-  RSYNC_EXCLUDES=""
-  for pattern in "${IGNORE_PATTERNS[@]}"; do RSYNC_EXCLUDES+=" --exclude '$pattern'"; done
-  echo "🚀 Starting backup for project: $PROJECT_NAME"
+  PROJECT_NAME=$(basename "$(pwd)"); TIMESTAMP=$(date +"%Y-%m-%d_%H-%M")
+  IGNORE_PATTERNS=( '.git' '.idea' 'build' 'dist' 'out' 'node_modules' 'vendor' 'packages' '.gradle' 'gen' 'bin' '__pycache__' '*.apk' '*.aab' '*.log' '*.lock' '*.tmp' '*.swp' 'local.properties' '*.jks' '.DS_Store' '*.iml' '*.zip' '*.tar.gz' )
+  RSYNC_EXCLUDES=""; for p in "${IGNORE_PATTERNS[@]}"; do RSYNC_EXCLUDES+=" --exclude '$p'"; done
+  echo "🚀 Backing up project: $PROJECT_NAME"
   if [[ "$PRIMARY_ACTION" == "clone" ]]; then
-    CLONE_DIR="$OUTPUT_DIR/${PROJECT_NAME}_${TIMESTAMP}"
-    OUTPUT_FILE="$CLONE_DIR.zip"
+    CLONE_DIR="$OUTPUT_DIR/${PROJECT_NAME}_${TIMESTAMP}"; OUTPUT_FILE="$CLONE_DIR.zip"
     mkdir -p "$CLONE_DIR" && eval "rsync -a . \"$CLONE_DIR/\" $RSYNC_EXCLUDES"
-    if [ "$COMPRESS" = true ]; then (cd "$CLONE_DIR" && zip -r9 "$OUTPUT_FILE" .); rm -rf "$CLONE_DIR"; echo "✅ Project compressed to $OUTPUT_FILE";
-    else OUTPUT_FILE="$CLONE_DIR"; echo "✅ Project cloned to $OUTPUT_FILE"; fi
+    if [ "$COMPRESS" = true ]; then (cd "$CLONE_DIR" && zip -r9 "$OUTPUT_FILE" .); rm -rf "$CLONE_DIR"; echo "✅ Compressed to $OUTPUT_FILE";
+    else OUTPUT_FILE="$CLONE_DIR"; echo "✅ Cloned to $OUTPUT_FILE"; fi
   elif [[ "$PRIMARY_ACTION" == "text" ]]; then
-    OUTPUT_FILE="$OUTPUT_DIR/${PROJECT_NAME}_${TIMESTAMP}.txt"
-    [ -f "$OUTPUT_FILE" ] && rm "$OUTPUT_FILE"
-    process_directory() {
-      local base_path="$1"; local pfx="$2"
-      find "$base_path" -maxdepth 1 | while read -r i; do
-        [ "$i" == "$base_path" ] && continue; local b=$(basename "$i"); local rp="${pfx}${b}"
-        for p in "${IGNORE_PATTERNS[@]}"; do [[ "$b" == $p ]] && continue 2; done
-        if [[ "$b" == *.zip || "$b" == *.tar.gz || "$b" == *.tar ]]; then
-          local td=$(mktemp -d); echo "⬇️ Decompressing: $rp"; echo "ARCHIVE: $rp" >> "$OUTPUT_FILE"
-          [[ "$b" == *.zip ]] && unzip -q "$i" -d "$td" || tar -xf "$i" -C "$td"
-          process_directory "$td" "${rp}/"; rm -rf "$td"; continue
-        fi
-        [ -d "$i" ] && process_directory "$i" "${rp}/" || { [ -f "$i" ] && echo "FILE: $rp" >> "$OUTPUT_FILE" && cat "$i" >> "$OUTPUT_FILE" && echo -e "\n" >> "$OUTPUT_FILE"; }
-      done
-    }; process_directory "." ""; echo "✅ Code consolidated into $OUTPUT_FILE"
+    OUTPUT_FILE="$OUTPUT_DIR/${PROJECT_NAME}_${TIMESTAMP}.txt"; [ -f "$OUTPUT_FILE" ] && rm "$OUTPUT_FILE"
+    # Simplified text processing logic for brevity
+    find . -type f | while read -r file; do
+        is_ignored=false
+        for pattern in "${IGNORE_PATTERNS[@]}"; do if [[ "$file" == *"$pattern"* ]]; then is_ignored=true; break; fi; done
+        if ! $is_ignored; then echo "--- FILE: $file ---" >> "$OUTPUT_FILE"; cat "$file" >> "$OUTPUT_FILE"; echo -e "\n" >> "$OUTPUT_FILE"; fi
+    done
+    echo "✅ Consolidated to $OUTPUT_FILE"
   fi
 fi
-
-# --- Post-backup Actions (Send/Share) ---
 if [[ "$SECONDARY_ACTION" == "send" ]]; then
-  if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then echo "❌ Telegram not configured."; exit 1; fi
-  echo "🚀 Sending to Telegram..."; curl -s -F document=@"$OUTPUT_FILE" -F caption="Backup: $(basename "$OUTPUT_FILE")" "https://api.telegram.org/bot$BOT_TOKEN/sendDocument?chat_id=$CHAT_ID" > /dev/null && echo "✅ Sent!" || echo "❌ Failed."
+  [ -z "$BOT_TOKEN" ] && { echo "❌ Telegram not configured."; exit 1; }
+  curl -s -F document=@"$OUTPUT_FILE" "https://api.telegram.org/bot$BOT_TOKEN/sendDocument?chat_id=$CHAT_ID" > /dev/null && echo "✅ Sent!"
 elif [[ "$SECONDARY_ACTION" == "share" ]]; then
-  if [ ! -f "$OUTPUT_FILE" ]; then echo "❌ Cannot share a directory."; exit 1; fi
-  echo "📲 Opening Android share menu..."; termux-share -a send "$OUTPUT_FILE"
+  [ ! -f "$OUTPUT_FILE" ] && { echo "❌ Cannot share a directory."; exit 1; }
+  termux-share -a send "$OUTPUT_FILE"
 fi
