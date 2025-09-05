@@ -1,0 +1,13 @@
+# Common ignored files
+.DS_Store
+*.log
+*.tmp
+*.swp
+
+# IDE-specific
+.idea/
+.vscode/
+
+# Dependencies
+node_modules/
+vendor/
